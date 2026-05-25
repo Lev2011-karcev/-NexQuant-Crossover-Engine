@@ -20,24 +20,22 @@
 }*/ // будет переполнение стэка 
 // реализация с циклом for
 
-double calculate_EMA(vector<double>& prices, int index, int period){
-    double answ = 0;
+double calculate_EMA(const vector<double>& prices, int index, int period, double prev_ema = 0.0) {
+    if (prices.empty()) return 0.0;
+
     double k = 2.0 / (period + 1.0);
-    double start = [&prices, period]() {
+    double curr_price = prices[index];
+
+    // Если это самый первый запуск для этой монеты и предыдщего EMA еще нет в базе
+    if (prev_ema == 0.0) {
+        // Считаем стартовую точку как обычное SMA по текущему куску истории
         double sum = 0.0;
-        // Цикл берет первые элементы в количестве period - 1
-        for (int i = 0; i < period ; ++i) {
+        for (int i = 0; i < prices.size(); ++i) {
             sum += prices[i];
         }
-        return sum;
-    }() / period;
-    double last = start;
-    if (index == period-1){
-        return last;
+        return sum / prices.size();
     }
-    for (int i = period; i <= index; i++){
-        answ = last * (1.0-k) + (prices[i] * k);
-        last = answ;
-    }
-    return answ;
+
+    // Во все последующие разы просто считаем по одной формуле в одну строчку!
+    return (curr_price * k) + (prev_ema * (1.0 - k));
 }

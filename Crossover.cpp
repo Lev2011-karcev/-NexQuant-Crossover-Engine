@@ -60,7 +60,7 @@ int main(){
         
         double sma = SMA(state.prices, period_sma);
         int last_idx = state.prices.size() - 1;
-        double ema = calculate_EMA(state.prices, last_idx, period_EMA);
+        double ema = calculate_EMA(state.prices, last_idx, period_EMA, state.prev_ema);
         
         state.curr_sma = sma;
         state.curr_ema = ema;
