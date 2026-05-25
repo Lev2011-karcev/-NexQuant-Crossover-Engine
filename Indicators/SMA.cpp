@@ -2,10 +2,11 @@
 
 
 
-double SMA(vector<double>& prices,int index){
+double SMA(vector<double>& prices,int period){
     double sum = 0;
-    for (int i = 0; i < index; i++){ // index должке быть прямо номером а не индексом
+    int start = prices.size() - period;
+    for (int i = start; i < prices.size(); i++){ // index должке быть прямо номером а не индексом
         sum += prices[i];
     }
-    return sum /index;
+    return sum / period;
 }
