@@ -39,15 +39,15 @@ int main(){
         CrossoverState& state = db[new_one.symbol];
         
         state.name = new_one.symbol;
-        state.prices.push_back(new_one.price);
+        state.prices.push_back(new_one.price); // Цена просто добавляется в хвост истории
         
-        int size_price = max(period_sma, period_EMA);
-        if (state.prices.size() > size_price){
-            state.prices.erase(state.prices.begin());
-        } else if (state.prices.size() < size_price){
-            cout <<"Not Enough data " << "\n";
+        // ИСПРАВЛЕНИЕ: Мы БОЛЬШЕ НЕ УДАЛЯЕМ старые цены через erase!
+        // Мы просто проверяем, накопилось ли достаточно данных для расчета.
+        int required_size = max(period_sma, period_EMA);
+        
+        if (state.prices.size() < static_cast<size_t>(required_size)){
+            cout <<"Not Enough data (" << state.prices.size() << "/" << required_size << ")\n";
             
-            // Даже если данных мало, сохраняем добавленную цену
             ofstream file_out(filename);
             json j_out = db;
             file_out << j_out.dump(4);
@@ -75,36 +75,59 @@ int main(){
             continue; 
         }
 
+        // 1. Считаем процент разницы между свежими индикаторами
         double diffPercent = abs(state.curr_ema - state.curr_sma) / state.curr_sma * 100.0;
         
-        if (diffPercent > 2.0){
-            // Проверяем условие BUY
-            if (state.prev_ema <= state.prev_sma && state.curr_ema > state.curr_sma){
-                if (state.pos != "BUY"){ // Если мы ЕЩЕ НЕ были в BUY — выводим надпись
-                    state.pos = "BUY";
-                    cout << " --------> BUY <--------" << "\n";
-                }
-            } 
-            // Проверяем условие SELL
-            else if (state.prev_ema >= state.prev_sma && state.curr_ema < state.curr_sma){
-                if (state.pos != "SELL"){ // Если мы ЕЩЕ НЕ были в SELL — выводим надпись
-                    state.pos = "SELL";
-                    cout << " --------< SELL >--------" << "\n";
-                }
-            } 
-            // Если тренд сильный, но пересечения прямо сейчас нет
-            else {
-                cout << " --------| TREND CONTINUES |--------" << "\n";
-            }
-        } else {
-            // Если попали в зону флэта (меньше 2%)
-            if (state.pos != "HOLD"){
+        // 2. Определяем факт физического пересечения линий на этом тике
+        bool is_cross_up = (state.prev_ema <= state.prev_sma && state.curr_ema > state.curr_sma);
+        bool is_cross_down = (state.prev_ema >= state.prev_sma && state.curr_ema < state.curr_sma);
+
+        if (is_cross_up) {
+            // Линии пересеклись вверх — проверяем силу импульса
+            if (diffPercent > 2.0) {
+                state.pos = "BUY";
+                cout << " --------> BUY <--------" << "\n";
+            } else {
                 state.pos = "HOLD";
-                cout << " --------| HOLD |--------" << "\n";
+                cout << " --------| HOLD (Weak Cross Up) |--------" << "\n";
+            }
+        } 
+        else if (is_cross_down) {
+            // Линии пересеклись вниз — проверяем силу импульса
+            if (diffPercent > 2.0) {
+                state.pos = "SELL";
+                cout << " --------< SELL >--------" << "\n";
+            } else {
+                state.pos = "HOLD";
+                cout << " --------| HOLD (Weak Cross Down) |--------" << "\n";
+            }
+        } 
+        else {
+            // Физического пересечения на этом тике не было
+            if (diffPercent > 2.0) {
+                // Если мы уже находимся в правильной позиции — подтверждаем тренд
+                if ((state.curr_ema > state.curr_sma && state.pos == "BUY") || 
+                    (state.curr_ema < state.curr_sma && state.pos == "SELL")) {
+                    cout << " --------| TREND CONTINUES |--------" << "\n";
+                } else {
+                    // Если линии разошлись сильнее 2%, но пересечение случилось раньше (наш баг)
+                    if (state.curr_ema > state.curr_sma && state.pos != "BUY") {
+                        state.pos = "BUY";
+                        cout << " --------> BUY (Trend Breakout) <--------" << "\n";
+                    } else if (state.curr_ema < state.curr_sma && state.pos != "SELL") {
+                        state.pos = "SELL";
+                        cout << " --------< SELL (Trend Breakout) >--------" << "\n";
+                    }
+                }
+            } else {
+                // Разрыв маленький, пересечений нет — пилим во флэте
+                if (state.pos != "HOLD") {
+                    state.pos = "HOLD";
+                    cout << " --------| HOLD |--------" << "\n";
+                }
             }
         }
         
-        // ЭТОТ БЛОК ТЕПЕРЬ СРАБАТЫВАЕТ ВСЕГДА!
         ofstream file_out(filename);
         json j_out = db;
         file_out << j_out.dump(4); 

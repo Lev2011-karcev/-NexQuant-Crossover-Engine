@@ -6,13 +6,13 @@
 #include "../json.hpp"
 
 struct CrossoverState{
-    string name;
-    vector<double> prices;
+    std::string name;
+    std::vector<double> prices;
     double prev_sma = 0.0;
     double prev_ema = 0.0;
     double curr_sma = 0.0;
     double curr_ema = 0.0;
-    string pos = "NONE";
+    std::string pos = "NONE";
 };// если prev_ema <= prev_sma а стало curr_ema > curr_sma -> BUY
 // если prev_ema >= prev_sma а стало curr_ema < curr_sma -> SELL
 // если |curr_ema - curr_sma| 
