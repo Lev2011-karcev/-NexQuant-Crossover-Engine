@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "json.hpp"
+#include "../json.hpp"
 
 struct CrossoverState{
     string name;
