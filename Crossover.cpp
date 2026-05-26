@@ -7,6 +7,8 @@
 #include "json.hpp"
 #include <unordered_map>
 #include <cmath> // Для abs()
+#include <span>
+#include <deque>
 
 using json = nlohmann::json;
 using namespace std;
@@ -54,6 +56,10 @@ int main(){
             file_out.close();
             continue;
         }
+       // span<double> trimmed_prices = state.prices;
+        if (state.prices.size() > static_cast<size_t>(required_size) + 17){
+            state.prices.pop_front();
+        }
         
         state.prev_sma = state.curr_sma;
         state.prev_ema = state.curr_ema;
@@ -76,15 +82,15 @@ int main(){
         }
 
         // 1. Считаем процент разницы между свежими индикаторами
-        double diffPercent = abs(state.curr_ema - state.curr_sma) / state.curr_sma * 100.0;
+        double diffPercent = std::abs(state.curr_ema - state.curr_sma) / state.curr_sma * 100.0;
         
         // 2. Определяем факт физического пересечения линий на этом тике
         bool is_cross_up = (state.prev_ema <= state.prev_sma && state.curr_ema > state.curr_sma);
         bool is_cross_down = (state.prev_ema >= state.prev_sma && state.curr_ema < state.curr_sma);
-
+        const double diffPercentMark = 0.2; // то на сколбко рано мы вступаем в сделку
         if (is_cross_up) {
             // Линии пересеклись вверх — проверяем силу импульса
-            if (diffPercent > 2.0) {
+            if (diffPercent > diffPercentMark) {
                 state.pos = "BUY";
                 cout << " --------> BUY <--------" << "\n";
             } else {
@@ -94,7 +100,7 @@ int main(){
         } 
         else if (is_cross_down) {
             // Линии пересеклись вниз — проверяем силу импульса
-            if (diffPercent > 2.0) {
+            if (diffPercent > diffPercentMark) {
                 state.pos = "SELL";
                 cout << " --------< SELL >--------" << "\n";
             } else {
@@ -104,7 +110,7 @@ int main(){
         } 
         else {
             // Физического пересечения на этом тике не было
-            if (diffPercent > 2.0) {
+            if (diffPercent > diffPercentMark) {
                 // Если мы уже находимся в правильной позиции — подтверждаем тренд
                 if ((state.curr_ema > state.curr_sma && state.pos == "BUY") || 
                     (state.curr_ema < state.curr_sma && state.pos == "SELL")) {
@@ -130,7 +136,7 @@ int main(){
         
         ofstream file_out(filename);
         json j_out = db;
-        file_out << j_out.dump(4); 
+        file_out << j_out.dump(); 
         file_out.close();
     }
 }

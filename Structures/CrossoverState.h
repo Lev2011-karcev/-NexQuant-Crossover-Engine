@@ -2,12 +2,12 @@
 #define CROSSOVERSTATE_H
 
 #include <string>
-#include <vector>
+#include <deque>
 #include "../json.hpp"
 
 struct CrossoverState{
     std::string name;
-    std::vector<double> prices;
+    std::deque<double> prices;
     double prev_sma = 0.0;
     double prev_ema = 0.0;
     double curr_sma = 0.0;

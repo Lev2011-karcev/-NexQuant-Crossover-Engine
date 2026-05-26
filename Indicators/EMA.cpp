@@ -20,7 +20,7 @@
 }*/ // будет переполнение стэка 
 // реализация с циклом for
 
-double calculate_EMA(vector<double>& prices, int index, int period, double prev_ema) {
+double calculate_EMA(deque<double>& prices, int index, int period, double prev_ema) {
     if (prices.empty()) return 0.0;
 
     double k = 2.0 / (period + 1.0);
